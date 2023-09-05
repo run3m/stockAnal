@@ -6,3 +6,9 @@ class readUrl:
 
     def greet(self):
         return f"Hitting {self.url} with param {self.param}"
+
+    def prin(self):
+        print(client);
+
+r = readUrl("asf", "q3");
+r.prin();
