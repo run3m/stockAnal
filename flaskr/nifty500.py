@@ -14,7 +14,7 @@ from datetime import datetime
 
 bp = Blueprint('nifty500', __name__, url_prefix='/nifty500')
 
-@bp.route("/updateNifty500", methods=['GET', 'POST'])
+@bp.route("/updateNifty500", methods=['GET', 'POST']) 
 def update_nifty_500():
     try:
         print("s", datetime.now());
