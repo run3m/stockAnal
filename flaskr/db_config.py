@@ -7,8 +7,7 @@ from flask import current_app, g
 
 def get_db():
     if 'db' not in g:
-        client = pymongo.MongoClient(current_app.config['DATABASE_CONNECTION'])
-        g.db = client['myDatabase']
+        g.db = pymongo.MongoClient(current_app.config['DATABASE_CONNECTION'])
 
     return g.db
 
