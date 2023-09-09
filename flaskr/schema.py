@@ -1,3 +1,4 @@
+import traceback
 import pymongo
 from bson.json_util import dumps
 
@@ -43,8 +44,40 @@ schema = {
 }
 
 # Create a collection with schema validation
-collection = db.create_collection('nifty500', validator=schema)
+try:
+    collection = db.create_collection('nifty500', validator=schema)
+except Exception as e:
+    print(f"Error {e}")
+    # traceback.print_exc()
 
+db['nifty500'].create_index([('symbol', pymongo.ASCENDING)], unique=True)
+
+
+schema_headers = {
+    "$jsonSchema": {
+        "type": "object",
+        "properties": {
+            "type": {
+                "type": "string",
+                "description": "Name of the header (required, non-empty string)"
+            },
+            "headers": {
+                "type": "object",
+                "additionalProperties": True,
+                "description": "Headers of the stock (required)"
+            }
+        },
+    }
+}
+
+# Create a collection with schema validation
+try:
+    collection = db.create_collection('headers', validator=schema_headers)
+except Exception as e:
+    print(f"Error {e}")
+    traceback.print_exc()
+
+db['headers'].create_index([('type', pymongo.ASCENDING)], unique=True)
 
 # # Insert a document that violates the schema (e.g., missing 'age')
 # invalid_user = {

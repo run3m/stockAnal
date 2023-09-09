@@ -4,6 +4,7 @@ import os
 from flask import (Flask, current_app)
 from . import db_config
 from . import nifty500
+from . import runtime_config
 
 
 def create_app(test_config=None):
@@ -33,5 +34,6 @@ def create_app(test_config=None):
     
     db_config.init_app(app)
     app.register_blueprint(nifty500.bp)
+    app.register_blueprint(runtime_config.bp)
     
     return app
