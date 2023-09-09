@@ -32,9 +32,10 @@ def update_nifty_500():
             print("e0", datetime.now());
             # csv_reader = [i for i in csv_reader];
         else:
-            response = requests.get(current_app.config['URLS']['nifty_500'],  headers=current_app.config['HEADERS']['nifty_500'])
+            headers_collection = db['headers'];
+            headers_doc = headers_collection.find_one({'type' : 'nifty500'})
+            response = requests.get(current_app.config['URLS']['nifty_500'],  headers=headers_doc['headers'])
             if response.status_code == 200:
-                print("2");
                 # Create a list to store the parsed CSV data as dictionaries
                 # Parse the CSV data
                 csv_content = response.text
