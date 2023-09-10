@@ -5,6 +5,8 @@ from flask import (Flask, current_app)
 from . import db_config
 from . import nifty500
 from . import hitTicker
+from . import runtime_config
+
 
 def create_app(test_config=None):
     # create and configure the app
@@ -34,5 +36,6 @@ def create_app(test_config=None):
     db_config.init_app(app)
     app.register_blueprint(nifty500.bp)
     app.register_blueprint(hitTicker.bp)
+    app.register_blueprint(runtime_config.bp)
     
     return app 
