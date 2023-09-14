@@ -6,7 +6,7 @@ from . import db_config
 from . import nifty500
 from . import hitTicker
 from . import runtime_config
-
+from . import fetchCommon
 
 def create_app(test_config=None):
     # create and configure the app
@@ -37,5 +37,6 @@ def create_app(test_config=None):
     app.register_blueprint(nifty500.bp)
     app.register_blueprint(hitTicker.bp)
     app.register_blueprint(runtime_config.bp)
+    app.register_blueprint(fetchCommon.bp)
     
     return app 
