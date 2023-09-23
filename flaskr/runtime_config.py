@@ -35,6 +35,8 @@ def refresh_headers():
             headers_collection.update_one({'type': 'nifty500'}, {'$set':  {'type': 'nifty500', 'headers' : headers}}, upsert=True);
         elif(type == 'trendlyne'):
             headers_collection.update_one({'type': 'trendlyne'}, {'$set':  {'type': 'trendlyne', 'headers' : headers}}, upsert=True);
+        elif(type == 'screener'):
+            headers_collection.update_one({'type': 'screener'}, {'$set':  {'type': 'screener', 'headers' : headers}}, upsert=True);
         else:
             raise Exception("Given refresh headers type parameter is not supported.")
         
