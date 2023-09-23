@@ -89,9 +89,8 @@ def updateUrls():
     sym = []
     i =0
     for document in cursor:
-        sym.append(document.get("symbol"))
-        i= i+1
-        if i == 10:
-            break
-    print(str(cursor))
-    return str(sym)
+        sym = document.get("symbol")
+        o_url , f_url = hit(url,header,sym)
+        nifty500.update_one({"symbol": sym}, {"$set": {"o_url": o_url}})
+        nifty500.update_one({"symbol": sym}, {"$set": {"f_url": f_url}})
+    return "Succesful";
