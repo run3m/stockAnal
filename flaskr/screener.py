@@ -4,7 +4,7 @@ import io
 import re
 import traceback
 from flask import (
-    Blueprint, flash, current_app, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, current_app, g, redirect, render_template, request, session, url_for , send_file
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from pymongo.errors import BulkWriteError
@@ -14,9 +14,11 @@ import requests
 import os
 from datetime import datetime
 from bs4 import BeautifulSoup
-
+import tempfile
+import json
+import csv
 bp = Blueprint('screenerio', __name__, url_prefix='/screener')
-
+tmp_file = ''
 @bp.route("/fetchBasicStocks", methods=['GET'])
 def fetch_basic_stocks():
     try:
@@ -263,13 +265,28 @@ def generate_report():
                     scores[constraint] = 0
             report['scores'] = scores;
             report['score'] = score;
-            reports.append(report);     
-        
-        return {"status" : "success", "data": reports};
+            reports.append(report);
+             
+        csv_path = writeTocsv(reports)
+
+
+            
+        return send_file(csv_path,
+                as_attachment=True,
+                download_name='output.csv',
+                mimetype='text/csv'
+            );
     except Exception as e:
         print(f"Error occured in generate report : {e}")
         traceback.print_exc()
         return {"status" : "failed", "error": str(e), "data": reports}
+    
+# @bp.after_request
+# def remove_file(response):
+#     global tmp_file
+#     os.remove(tmp_file) # Delete file
+#     print(tmp_file + "removed")
+#     return response
 
 def get_cleaned_header(input_string):
     if(input_string):
@@ -287,5 +304,36 @@ def string_to_float(input_string):
         float_value = float(input_string)
         return float_value
     except Exception:
-        # Handle the error when the input string is not a valid float
         return input_string
+    
+def flatten(d, parent_key='', sep='.'):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+def writeTocsv(reports):
+    global tmp_file 
+    tmp = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
+    tmp_file = tmp.name
+    data = json.loads(json.dumps(reports))
+    fieldnames= list(flatten(data[0]).keys())
+    dic = {}
+    for i in fieldnames:
+        dic[i] = i
+
+    f = open(tmp_file, 'w')
+
+    try:
+        writer = csv.DictWriter(f, fieldnames=fieldnames) 
+        writer.writerow(dic)
+        for row in data:
+            writer.writerow(flatten(row))
+
+    finally:
+        f.close()   
+    return tmp_file;
