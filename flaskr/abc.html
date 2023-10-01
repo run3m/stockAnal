@@ -1,0 +1,47 @@
+<div class="flex-row flex-gap-8 flex-space-between flex-align-center">
+
+    <div class="sub" data-page-info="">
+        2976 results found: Showing page 1 of 60
+    </div>
+
+
+    <div class="flex flex-gap-8 flex-end">
+
+        <div class="dropdown-filter">
+            <button onclick="toggleIndustryFilter(event)"
+                class="button-small plausible-event-name=Industry+Filter plausible-event-user=free"
+                data-api-url="/api/get/sectors/?sort=&amp;order=&amp;source=&amp;query=Market+Capitalization++%3E+40%0D%0A&amp;url_name=raw_query">
+                <i class="icon-funnel"></i>
+                Industry
+            </button>
+            <ul class="dropdown-content font-size-14" style="min-width: 225px;"></ul>
+        </div>
+
+
+
+        <script src="https://cdn-static.screener.in/js/industry-filter.5f299c25b014.js"></script>
+
+
+
+        <form
+            action="/api/export/screen/?sort=&amp;order=&amp;source=&amp;query=Market+Capitalization++%3E+40%0D%0A&amp;url_name=raw_query"
+            method="POST" class="hide-on-mobile">
+            <input type="hidden" name="csrfmiddlewaretoken"
+                value="GthkQsOrWlSU5tUNYa3dE3FtgyFBouF4zPuKjmJspcSij8Ym8W4rQ8Oq616Z7ioi">
+            <button class="button-small tooltip-left plausible-event-name=Excel+Screen plausible-event-user=free"
+                aria-label="Download Results" type="submit" data-tooltip="Download Results">
+                <i class="icon-download"></i>
+                Export
+            </button>
+        </form>
+
+
+
+        <a href="/user/columns/?next=/screen/raw/%3Fsort%3D%26order%3D%26source%3D%26query%3DMarket%2BCapitalization%2B%2B%253E%2B40%250D%250A"
+            class="button button-small button-secondary plausible-event-name=Edit+Columns plausible-event-user=free">
+            <i class="icon-cog"></i>
+            Edit Columns
+        </a>
+
+    </div>
+</div>

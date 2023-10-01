@@ -30,15 +30,13 @@ def handle_message(message_details, contact_details):
     })
     
     print(f"Smash, messages endpoint body : {message_request_body}")
-    bearer_token = "EAAN7ZAYP8husBO3ZARS537OczlY1oSGFTBugkzJy1x9kDTSEtsDDQZAazLrNWLvj6iD1zZAJCOq9YtgYJGSruFdGKkZC5xBTl9IEJidD6lKpOQICFsLTOhdCclTFnKrqWCxMJHdHtKUDXBd7tdkYOqKgZAZAxJYwug71fnzEP3FItBf4yLz6fUNLyjr1PGorXwXXpFxcmRhbvkwzJnKUrgZD"
+    bearer_token = current_app.config['WHATSAPP_CONFIG']['bearer_token'];
     response = requests.post("https://graph.facebook.com/v17.0/137217652804256/messages", headers={"Content-type": "application/json", "Authorization": f"Bearer {bearer_token}"}, data=message_request_body);
     response_data = response.json();
     print(f"Smash, messages response : {response_data}");
 
 def start_convo(contact_details):
     buttons = current_app.config['BUTTONS'];
-    fetch_basic_button = buttons["1"]
-    generate_report = buttons['2'];
     return {
             "type": "button",
             "header": { # optional
@@ -55,11 +53,11 @@ def start_convo(contact_details):
                 "buttons": [
                     {
                         "type": "reply",
-                        "reply": fetch_basic_button
+                        "reply": buttons["FETCH_BASIC_STOCKS"]
                     },
                     {
                         "type": "reply",
-                        "reply": generate_report
+                        "reply": buttons['GENERATE_REPORT']
                     }
                 ] 
             } # end action   
