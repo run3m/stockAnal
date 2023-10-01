@@ -10,6 +10,7 @@ from . import screener
 from .whatsapp import whatsapp
 
 # calls = {};
+from . import fetchCommon
 
 def create_app(test_config=None):
     # create and configure the app
@@ -45,5 +46,6 @@ def create_app(test_config=None):
     app.register_blueprint(runtime_config.bp)
     app.register_blueprint(screener.bp)
     app.register_blueprint(whatsapp.bp)
+    app.register_blueprint(fetchCommon.bp)
     
     return app 
