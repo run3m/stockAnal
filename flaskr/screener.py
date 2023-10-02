@@ -85,6 +85,7 @@ def fetch_basic_stocks():
             # we can add all those that fail insert to an array and trigger update_many for those.
             for error in e.details['writeErrors']:
                 print("Error:", error)
+            raise e
         
         return {"status" : "success", "data": {"headers" : headers, "values" : stock_data, "inserted_ids": [str(id) for id in insert_result.inserted_ids], "failed_pages" : failed_pages, "count": len(stock_data)}}
 
