@@ -3,11 +3,12 @@ import sqlite3
 import click
 import pymongo
 from flask import current_app, g
-
+import ssl
+import certifi
 
 def get_db():
     if 'db' not in g:
-        g.db = pymongo.MongoClient(current_app.config['DATABASE_CONNECTION'])
+        g.db = pymongo.MongoClient(current_app.config['DATABASE_CONNECTION'], tlsCAFile=certifi.where())
 
     return g.db
 

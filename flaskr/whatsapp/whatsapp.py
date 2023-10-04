@@ -48,7 +48,16 @@ def webhook():
         except Exception as e:
             print(f"Error occured in send whatsapp message : {e}")
             traceback.print_exc()
+        finally:
+            calls = current_app.config['calls'];
+            unique_id = ['changes'][0]['value']['messages'][0]['id'];
+            if(entries[0].get(unique_id, None) != None):
+                print(entries[0].get(unique_id))
+                calls[entries[0].get(unique_id)] = None
         return Response(status=200)
+    
+
+
 
 def is_ongoing_or_status_request(entry):
     unique_id = None;

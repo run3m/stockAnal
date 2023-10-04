@@ -230,6 +230,22 @@ def fetch_data(soup, stock_data, header_req = False):
             
     return_val.append(stock_data);
     return return_val
+
+@bp.route("/fetchFields", methods=['GET', 'POST'])
+def fetchFields():
+    # We'll add to fields array even if one doc contains a field.
+    try:
+        client = get_db()
+        db = client['myDatabase']
+        scr_init = db['scr_init']
+        fields = []
+        for document in scr_init.find({}):  # Retrieve all documents
+            for field in document.keys():  # Iterate over the fields in each document
+                if field not in fields:
+                    fields.append(field)
+        return {"status": "success", "data" : fields};
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
     
 @bp.route("/generateReport", methods=['POST'])
 def generate_report():

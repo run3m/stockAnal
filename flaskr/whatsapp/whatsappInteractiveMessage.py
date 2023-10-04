@@ -139,66 +139,48 @@ def internal_fetch_basic_stocks_response(fetch_stocks_response,db, contact_detai
     
     return body
 
-acsdl = {
-    "type": "list",
-    "header": {
-      "type": "text",
-      "text": "Generate Report"
-    },
-    "body": {
-      "text": "These are your latest reports constraints. You can select one or choose to enter a new query."
-    },
-    # "footer": {
-    #   "text": "your-footer-content-here"
-    # },
-    "action": {
-      "button": "cta-button-content",
-      "sections":[
-        {
-          "title":"your-section_bingo",
-          "rows": [
-            {
-              "id":"unique-row-identifier-here_a1",
-              "title": "row-title_a1",
-              "description": "row-description_jacmalsaksfalmlkaedf",           
-            },
-            {
-              "id":"unique-row-identifier-here_a2",
-              "title": "row-title_a2",
-              "description": "row-description_jacmalsaksfalmlkaedf", 
-            }
-          ]
-        },
-        {
-          "title":"your-section_lays",
-          "rows": [
-            {
-              "id":"unique-row-identifier-here_a3",
-              "title": "row-title_a3",
-              "description": "row-description_jacmalsaksfalmlkaedf",           
-            }
-          ]
-        },
-      ]
+sample_interactive = {
+      "messaging_product": "whatsapp",
+      "recipient_type": "individual",
+      "to": "918328223386",
+      "type": "interactive",
+      "interactive": {}
     }
-  }
 
 def handle_generate_report_reply(db, contact_details):
-    return acsdl;
     latest_searches =  db['latest_searches']
     user_searches_doc = latest_searches.find_one({"user" : contact_details['wa_id']})
     latest_user_searches = None
-    if('searches' in user_searches_doc and  isinstance(user_searches_doc['searches'], list)):
+    interactive = {
+        "type" : "button",
+        "action": {
+            "buttons": [
+                {
+                    "type": "reply",
+                    "reply": {
+                        "id": "SHOW_FIELDS",
+                        "title": "Press to get a list of available fields"
+                    }
+                }
+            ]
+        }
+    }
+    if('searches' in user_searches_doc and  isinstance(user_searches_doc['searches'], list) and len(user_searches_doc['searches']) > 0):
         latest_user_searches = user_searches_doc['searches']
-        if(len(user_searches_doc['searches']) > 9):
-            latest_user_searches = user_searches_doc['searches'][-9:]
-            user_searches_doc['searches'] = latest_user_searches
-            latest_searches.update_one({"_id":user_searches_doc['_id']}, {"$set":{"searches":latest_user_searches}})
-    body = {};
-    if(latest_user_searches != None and isinstance(latest_user_searches, list)):
-        print("return latest 10 options")
+        message = f"Below are your latest ## report queries, you can select one or provide a new query"
+        
+        for i,search in enumerate(user_searches_doc['searches']):
+            search_message = f"\n {i+1}. {search}"
+            if((len(message) + len(search_message) <= 4096) or (i < 9 and (len(message) + len(search_message) <= 4097))):
+                message += search_message
+            else:
+                message.replace("##", i)
+                latest_user_searches = user_searches_doc['searches'][:i]
+                user_searches_doc['searches'] = latest_user_searches
+                latest_searches.update_one({"_id":user_searches_doc['_id']}, {"$set":{"searches":latest_user_searches}})
     else:
-        # return message to user to directly enter the query to run
-        print("Return direct give report constraints")
+        # User has no previous queries. send a enter new query message
+        message = f"Looks like you have no previous report queries. Want to know what fields are available?"
 
-    return "asdf"
+    interactive['body'] = {"text": message}
+    return interactive
