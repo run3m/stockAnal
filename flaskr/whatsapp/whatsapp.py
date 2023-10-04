@@ -50,10 +50,9 @@ def webhook():
             traceback.print_exc()
         finally:
             calls = current_app.config['calls'];
-            unique_id = ['changes'][0]['value']['messages'][0]['id'];
-            if(entries[0].get(unique_id, None) != None):
-                print(entries[0].get(unique_id))
-                calls[entries[0].get(unique_id)] = None
+            if(entries[0].get('changes', [{}])[0].get('value', {}).get('messages',[{}])[0].get('id', None) != None):
+                print(entries[0]['changes'][0]['value']['messages'][0]['id'])
+                calls[entries[0]['changes'][0]['value']['messages'][0]['id']] = None
         return Response(status=200)
     
 

@@ -33,7 +33,7 @@ def handle_message(message_details, contact_details):
     print(f"Smash message type text");
     interaction = message_details['interactive'];
     db = get_db()['myDatabase'];
-    body = {};
+    messsage_body = {};
     if(interaction['type'] == 'button_reply'):
         print(f"Smash interaction type button_reply");
         button_reply = interaction[interaction['type']];
@@ -41,20 +41,24 @@ def handle_message(message_details, contact_details):
             raise Exception("Button configuration not mathcing. Dev : check config.py button linking")
         
         if(button_reply['id'] == 'FETCH_BASIC_STOCKS'):
-            body = handle_fetch_basic_stocks(db, contact_details, buttons)
+            messsage_body = handle_fetch_basic_stocks(db, contact_details, buttons)
         elif(button_reply['id'] == 'FETCH_FAILED_YES'):
-            body = handle_failed_basic_stocks_reply(db, contact_details, buttons)
+            messsage_body = handle_failed_basic_stocks_reply(db, contact_details, buttons)
         elif(button_reply['id'] == 'GENERATE_YES'):
-            body = handle_generate_report_reply(db, contact_details)
+            messsage_body = handle_generate_report_reply(db, contact_details)
+        elif(button_reply['id'] == 'SHOW_FIELDS'):
+            # write for show fields
+            messsage_body = handle_show_fields()
         else:
             return
-    message_request_body = json.dumps({
+        
+    print(f"Smash message_body : {messsage_body}")
+    base = {
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
-        "to" : contact_details['wa_id'],
-        "type": "interactive",
-        "interactive": body
-    })
+        "to" : contact_details['wa_id']
+    }
+    message_request_body = json.dumps({**base, **messsage_body})
     
     print(f"Smash, messages endpoint body : {message_request_body}")
     bearer_token = current_app.config['WHATSAPP_CONFIG']['bearer_token'];
@@ -79,7 +83,7 @@ def internal_fetch_basic_stocks_response(fetch_stocks_response,db, contact_detai
         raise Exception(f"Oh no, could not fetch stocks. Something is off. Please come back later. Error message: {fetch_stocks_response['error']}");
     # fetch_stocks_response success
     failed_pages = fetch_stocks_response['data']['failed_pages'];
-
+    
     if(len(failed_pages) > 0):
         # send partial success message;
         last_messages_collection = db['last_messages']
@@ -130,14 +134,15 @@ def internal_fetch_basic_stocks_response(fetch_stocks_response,db, contact_detai
                 },
                 {
                     "type": "reply",
-                    "reply": buttons['GENERATE_YES']
+                    "reply": buttons['GENERATE_NO']
                 }
             ] 
         } # end action
         }
         # send full success message
     
-    return body
+    return {"type": "interactive",
+            "interactive": body}
 
 sample_interactive = {
       "messaging_product": "whatsapp",
@@ -149,6 +154,7 @@ sample_interactive = {
 
 def handle_generate_report_reply(db, contact_details):
     latest_searches =  db['latest_searches']
+    buttons = current_app.config['BUTTONS']
     user_searches_doc = latest_searches.find_one({"user" : contact_details['wa_id']})
     latest_user_searches = None
     interactive = {
@@ -157,15 +163,13 @@ def handle_generate_report_reply(db, contact_details):
             "buttons": [
                 {
                     "type": "reply",
-                    "reply": {
-                        "id": "SHOW_FIELDS",
-                        "title": "Press to get a list of available fields"
-                    }
+                    "reply": buttons['SHOW_FIELDS']
                 }
             ]
         }
     }
-    if('searches' in user_searches_doc and  isinstance(user_searches_doc['searches'], list) and len(user_searches_doc['searches']) > 0):
+    print(f"Smash searches {user_searches_doc}")
+    if(user_searches_doc != None and 'searches' in user_searches_doc and  isinstance(user_searches_doc['searches'], list) and len(user_searches_doc['searches']) > 0):
         latest_user_searches = user_searches_doc['searches']
         message = f"Below are your latest ## report queries, you can select one or provide a new query"
         
@@ -183,4 +187,17 @@ def handle_generate_report_reply(db, contact_details):
         message = f"Looks like you have no previous report queries. Want to know what fields are available?"
 
     interactive['body'] = {"text": message}
-    return interactive
+    return {"type": "interactive",
+            "interactive": interactive}
+    
+def handle_show_fields():
+    print("hbknsjdf");
+    fields_response = screener.fetchFields()
+    if(fields_response['status'] == "failed"):
+        raise Exception("Unable to fetch fields right now please try again.")
+    print("askncs")
+    text = "\n".join([f"{i + 1}. {field}" for i,field in enumerate(fields_response['data'])]) 
+    text += "\nPlease type a query using the fields to generate a report or if you have previous queries send the corresponding number from above." 
+    print(f"Smash {text}")
+    return {"type": "text", "text": {"body": text}}
+    
