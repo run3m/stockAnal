@@ -71,7 +71,7 @@ def is_ongoing_or_status_request(entry):
             raise Exception("Unable to read neither message id nor message status")
 
     calls = current_app.config['calls']
-    if(unique_id in calls):
+    if(unique_id in calls and bool(calls[unique_id])) :
         return True
 
     calls[unique_id] = True

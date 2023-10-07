@@ -24,10 +24,12 @@ class Message:
         # Implement your send_message logic here
             # Use the method name to make the HTTP request dynamically
             response = self._methods[self.method](self.url, headers=self.headers, data=self.body)
+            
+            return response;
 
             # Check the response
-            if response.status_code == 200:
-                print('Request was successful')
-                print('Response:', response.json())
-            else:
-                print(f'Request failed with status code {response.status_code}')
+            # if response.status_code == 200:
+            #     print('Request was successful')
+            #     print('Response:', response.json())
+            # else:
+            #     print(f'Request failed with status code {response.status_code}')

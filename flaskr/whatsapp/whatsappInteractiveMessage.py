@@ -44,7 +44,7 @@ def handle_message(message_details, contact_details):
             messsage_body = handle_fetch_basic_stocks(db, contact_details, buttons)
         elif(button_reply['id'] == 'FETCH_FAILED_YES'):
             messsage_body = handle_failed_basic_stocks_reply(db, contact_details, buttons)
-        elif(button_reply['id'] == 'GENERATE_YES'):
+        elif(button_reply['id'] == 'GENERATE_YES' or button_reply['id'] == 'GENERATE_REPORT'):
             messsage_body = handle_generate_report_reply(db, contact_details)
         elif(button_reply['id'] == 'SHOW_FIELDS'):
             # write for show fields
@@ -121,7 +121,7 @@ def internal_fetch_basic_stocks_response(fetch_stocks_response,db, contact_detai
             "text": "Fetch basic stocks"
         }, # end header
         "body": {
-            "text": f"{'Yaay! ' if random.randint(1,2) == 1 else 'Hurray! '}.\Completed fetching successfully. \nDo you want to generate a report?"
+            "text": f"{'Yaay! ' if random.randint(1,2) == 1 else 'Hurray! '}.\nCompleted fetching successfully. \nDo you want to generate a report?"
         },
         "footer": { # optional
             "text": "Please select an option from below"
@@ -170,18 +170,22 @@ def handle_generate_report_reply(db, contact_details):
     }
     print(f"Smash searches {user_searches_doc}")
     if(user_searches_doc != None and 'searches' in user_searches_doc and  isinstance(user_searches_doc['searches'], list) and len(user_searches_doc['searches']) > 0):
-        latest_user_searches = user_searches_doc['searches']
+        latest_user_searches = sorted(user_searches_doc['searches'], key = lambda search: search['last_triggered'], reverse = True)
         message = f"Below are your latest ## report queries, you can select one or provide a new query"
-        
-        for i,search in enumerate(user_searches_doc['searches']):
-            search_message = f"\n {i+1}. {search}"
-            if((len(message) + len(search_message) <= 4096) or (i < 9 and (len(message) + len(search_message) <= 4097))):
+        count = 0
+        for search in user_searches_doc['searches']:
+            search_message = f"\n {count+1}. {search['query']}"
+            if((len(message) + len(search_message) <= 4096) or (count < 9 and (len(message) + len(search_message) <= 4097))):
+                count += 1
                 message += search_message
             else:
-                message.replace("##", i)
-                latest_user_searches = user_searches_doc['searches'][:i]
-                user_searches_doc['searches'] = latest_user_searches
-                latest_searches.update_one({"_id":user_searches_doc['_id']}, {"$set":{"searches":latest_user_searches}})
+                break
+        message = message.replace("##", str(count))
+        latest_user_searches = user_searches_doc['searches'][:count]
+        user_searches_doc['searches'] = latest_user_searches
+        latest_searches.update_one({"_id":user_searches_doc['_id']}, {"$set":{"searches":latest_user_searches}})
+        last_messages = db['last_messages']
+        last_messages.update_one({'user': contact_details['wa_id']}, {"$set":{"type": "generate_report", "data": latest_user_searches}}, upsert=True)
     else:
         # User has no previous queries. send a enter new query message
         message = f"Looks like you have no previous report queries. Want to know what fields are available?"
@@ -191,12 +195,11 @@ def handle_generate_report_reply(db, contact_details):
             "interactive": interactive}
     
 def handle_show_fields():
-    print("hbknsjdf");
     fields_response = screener.fetchFields()
     if(fields_response['status'] == "failed"):
         raise Exception("Unable to fetch fields right now please try again.")
-    print("askncs")
-    text = "\n".join([f"{i + 1}. {field}" for i,field in enumerate(fields_response['data'])]) 
+    text = "The are the available fields : "
+    text += "\n".join([f"{i + 1}. {field}" for i,field in enumerate(fields_response['data'])]) 
     text += "\nPlease type a query using the fields to generate a report or if you have previous queries send the corresponding number from above." 
     print(f"Smash {text}")
     return {"type": "text", "text": {"body": text}}

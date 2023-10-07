@@ -286,7 +286,8 @@ def generate_report():
              
         csv_path = writeTocsv(reports)
 
-
+        if("just_path" in body and bool(body["just_path"])):
+            return {"path": csv_path}
             
         return send_file(csv_path,
                 as_attachment=True,
@@ -335,8 +336,8 @@ def flatten(d, parent_key='', sep='.'):
 
 def writeTocsv(reports):
     global tmp_file 
-    tmp = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
-    tmp_file = tmp.name
+    tmp = tempfile.NamedTemporaryFile(mode='w+t', delete=True)
+    tmp_file = f"{tmp.name}.csv"
     data = json.loads(json.dumps(reports))
     fieldnames= list(flatten(data[0]).keys())
     dic = {}
