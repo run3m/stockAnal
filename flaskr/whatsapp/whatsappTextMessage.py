@@ -6,7 +6,11 @@ import re
 
 import requests
 from flask import (current_app)
+
+from .util import generateReportAndUpload, sendReport
 from ..db_config import get_db
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+
 
 def handle_message(message_details, contact_details):
     print(f"Smash message type text");
@@ -16,6 +20,7 @@ def handle_message(message_details, contact_details):
     last_messages = db['last_messages']
     latest_searches = db['latest_searches']
     last_message = last_messages.find_one({"user": contact_details['wa_id']});
+    bearer_token = current_app.config['WHATSAPP_CONFIG']['bearer_token'];
     print(f"Smash last message: {last_message}")
     if(message.strip().lower() == 'hi' or message.strip().lower() == 'hello'):
         #start convo
@@ -24,6 +29,9 @@ def handle_message(message_details, contact_details):
     elif(re.search(r'[><=\[\]]', message) != None):
         # give report
         print("Smash, b")
+        req_search = {'query': message}
+        generateReportAndUpload(req_search=req_search, last_message=last_message, contact_details=contact_details)
+        sendReport(req_search['media_id'], contact_details=contact_details)
     elif(bool(last_message) and last_message['type'] == "generate_report" and re.search(r'\d', message) !=None):
         print("Smash, c")
         report_no = int(re.findall(r"\d+", message)[0])-1;
@@ -31,49 +39,8 @@ def handle_message(message_details, contact_details):
             raise Exception(f"Requested report number is greater than number of lastest reports available.\nPlease enter a number between 1 and {len(last_message['data'])}.")
         req_search = last_message['data'][report_no];
         if(not bool(req_search['media_id'])):
-            with current_app.test_client() as client:
-                response = client.post('/screener/generateReport', json={"just_path": True,"constraints": req_search['query'].split(',')})
-                if response.status_code == 200:
-                    csv_path = response.get_json()['path']
-                    
-                    files = {
-                        'file': open(csv_path, 'rb'),
-                        'type': 'image/jpeg',
-                        'messaging_product': 'whatsapp'
-                    }
-                    # CONTINUE HERE
-                    # upload the csv to whatsapp server : https://graph.facebook.com/v18.0/137217652804256/media
-                    bearer_token = current_app.config['WHATSAPP_CONFIG']['bearer_token'];
-                    media_response = requests.post("https://graph.facebook.com/v18.0/137217652804256/media", headers={"Content-type": "application/json", "Authorization": f"Bearer {bearer_token}"}, files=files);
-                    try:
-                        # Attempt to delete the file
-                        os.remove(csv_path)
-                        print(f"File '{csv_path}' has been deleted successfully.")
-                    except FileNotFoundError:
-                        print(f"File '{csv_path}' not found.")
-                    except Exception as e:
-                        print(f"An error occurred while deleting the file: {e}")
-                    
-                    if(media_response.status_code != 200):
-                        raise Exception(f"Failed to run your query. Please try again later.")
-                    media_id = media_response.json()["id"];
-                    req_search['media_id'] = media_id;
-                    latest_searches.update_one({"user": contact_details['wa_id']}, {"$set" : {"media_id": media_id, "last_triggered" : datetime.now()}});
-                    last_messages.update_one({"_id": last_message['_id']}, {"$set" : last_message})
-                else:
-                    raise Exception(f"Failed to run your query. Please try again later.")
-        if(bool(req_search['media_id'])):
-            media_message = {
-                "messaging_product": "whatsapp",
-                "recipient_type": "individual",
-                "to": "PHONE-NUMBER",
-                "type": "application/vnd.ms-excel",
-                "application/vnd.ms-excel": {
-                    "id" : req_search['media_id']
-                }
-            }
-            response = requests.post("https://graph.facebook.com/v17.0/137217652804256/messages", headers={"Content-type": "application/json", "Authorization": f"Bearer {bearer_token}"}, data=media_message);
-            response_data = response.json();
+            generateReportAndUpload(req_search=req_search, last_message=last_message, contact_details=contact_details)
+        sendReport(req_search['media_id'], contact_details=contact_details)
                 
     else:
         #start convo
