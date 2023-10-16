@@ -7,9 +7,8 @@ import re
 import requests
 from flask import (current_app)
 
-from .util import generateReportAndUpload, sendReport
+from . import util
 from ..db_config import get_db
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 
 def handle_message(message_details, contact_details):
@@ -18,7 +17,6 @@ def handle_message(message_details, contact_details):
     interactive_obj = None;
     message = str(message_details['text']['body']);
     last_messages = db['last_messages']
-    latest_searches = db['latest_searches']
     last_message = last_messages.find_one({"user": contact_details['wa_id']});
     bearer_token = current_app.config['WHATSAPP_CONFIG']['bearer_token'];
     print(f"Smash last message: {last_message}")
@@ -30,8 +28,8 @@ def handle_message(message_details, contact_details):
         # give report
         print("Smash, b")
         req_search = {'query': message}
-        generateReportAndUpload(req_search=req_search, last_message=last_message, contact_details=contact_details)
-        sendReport(req_search['media_id'], contact_details=contact_details)
+        util.generateReportAndUpload(req_search=req_search, last_message=last_message, contact_details=contact_details)
+        util.sendReport(req_search['media_id'], contact_details=contact_details)
     elif(bool(last_message) and last_message['type'] == "generate_report" and re.search(r'\d', message) !=None):
         print("Smash, c")
         report_no = int(re.findall(r"\d+", message)[0])-1;
@@ -39,8 +37,8 @@ def handle_message(message_details, contact_details):
             raise Exception(f"Requested report number is greater than number of lastest reports available.\nPlease enter a number between 1 and {len(last_message['data'])}.")
         req_search = last_message['data'][report_no];
         if(not bool(req_search['media_id'])):
-            generateReportAndUpload(req_search=req_search, last_message=last_message, contact_details=contact_details)
-        sendReport(req_search['media_id'], contact_details=contact_details)
+            util.generateReportAndUpload(req_search=req_search, last_message=last_message, contact_details=contact_details)
+        util.sendReport(req_search['media_id'], contact_details=contact_details)
                 
     else:
         #start convo
