@@ -7,6 +7,7 @@ from . import nifty500
 from . import hitTicker
 from . import runtime_config
 from . import screener
+from .whatsapp.messageClassifier import whatsappClassifier
 from .whatsapp import whatsapp
 
 # calls = {};

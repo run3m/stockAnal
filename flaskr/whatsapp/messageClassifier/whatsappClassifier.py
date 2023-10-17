@@ -4,8 +4,8 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
-
-import messageClassifcations
+import joblib
+from . import messageClassifcations
 
 # Sample dataset - replace with your own labeled data
 corpus = messageClassifcations.fetch_basic_stocks_data + messageClassifcations.generate_new_report_data + messageClassifcations.old_reports_data + messageClassifcations.retry_basic_fetch_data + messageClassifcations.show_fields_data + messageClassifcations.start_conversation_data;
@@ -36,10 +36,19 @@ print(f"Accuracy: {accuracy:.2f}")
 print(classification_report(y_test, y_pred))
 
 # Now you can use the trained model to classify new sentences
-new_sentences = ["Hey, i want to generate a report", "It is an old report"]
-X_new_counts = count_vectorizer.transform(new_sentences)
-X_new_tfidf = tfidf_transformer.transform(X_new_counts)
-predictions = clf.predict(X_new_tfidf)
+# new_sentences = ["Hey, i want to generate a report", "It is an old report"]
+# X_new_counts = count_vectorizer.transform(new_sentences)
+# X_new_tfidf = tfidf_transformer.transform(X_new_counts)
+# predictions = clf.predict(X_new_tfidf)
 
-for sentence, prediction in zip(new_sentences, predictions):
-    print(f"Sentence: '{sentence}' - Predicted Label: {prediction}")
+# for sentence, prediction in zip(new_sentences, predictions):
+#     print(f"Sentence: '{sentence}' - Predicted Label: {prediction}")
+
+def make_prediction(messages=[]):
+    if(not bool(messages)):
+        raise Exception("Please give atleast 1 message.")
+    X_new_counts = count_vectorizer.transform(messages)
+    X_new_tfidf = tfidf_transformer.transform(X_new_counts)
+    return clf.predict(X_new_tfidf)
+    
+joblib.dump(make_prediction, 'message_classification_function.pkl')

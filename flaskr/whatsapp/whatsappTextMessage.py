@@ -6,10 +6,12 @@ import re
 
 import requests
 from flask import (current_app)
+import joblib
 
 from . import util
 from ..db_config import get_db
 
+make_prediction = joblib.load('message_classification_function.pkl')
 
 def handle_message(message_details, contact_details):
     print(f"Smash message type text");
@@ -20,6 +22,9 @@ def handle_message(message_details, contact_details):
     last_message = last_messages.find_one({"user": contact_details['wa_id']});
     bearer_token = current_app.config['WHATSAPP_CONFIG']['bearer_token'];
     print(f"Smash last message: {last_message}")
+    pred = make_prediction(message)
+    print("Smash prediction : ",pred)
+    print("Smash prediction type : ", pred[0])
     if(message.strip().lower() == 'hi' or message.strip().lower() == 'hello'):
         #start convo
         print("Smash, a")
