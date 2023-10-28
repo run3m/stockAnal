@@ -1,13 +1,16 @@
 import random
 from flask import (current_app)
 from .. import screener
+from ..db_config import get_db
 
-def handle_fetch_basic_stocks(db, contact_details):
+def handle_fetch_basic_stocks(contact_details):
+    db = get_db()['myDatabase'];
     buttons = current_app.config['BUTTONS'];
     fetch_stocks_response = screener.fetch_basic_stocks()
     return internal_fetch_basic_stocks_response(fetch_stocks_response, db, contact_details, buttons)
 
-def handle_failed_basic_stocks_reply(db, contact_details):
+def handle_failed_basic_stocks_reply(contact_details):
+    db = get_db()['myDatabase'];
     buttons = current_app.config['BUTTONS'];
     with current_app.test_client() as client:
         user_last_message = db['last_messages'].find_one({'user' : contact_details['wa_id'], 'type': 'failed_pages'})
@@ -90,7 +93,8 @@ sample_interactive = {
       "interactive": {}
     }
 
-def handle_generate_report_reply(db, contact_details):
+def handle_generate_report_reply(contact_details):
+    db = get_db()['myDatabase'];
     latest_searches =  db['latest_searches']
     buttons = current_app.config['BUTTONS']
     user_searches_doc = latest_searches.find_one({"user" : contact_details['wa_id']})
