@@ -40,7 +40,8 @@ def generateReportAndUpload(req_search, last_message, contact_details):
             media_id = media_response.json()["id"];
             # this will change the passed req_search. which means req_search in calling code will also change.
             req_search['media_id'] = media_id;
-            latest_searches.update_one({"user": contact_details['wa_id']}, {"$set" : {"media_id": media_id, "last_triggered" : datetime.now()}});
+            
+            latest_searches.update_one({"user": contact_details['wa_id']}, {"$push": {"searches": {'query' : req_search['query'], "media_id": media_id, "last_triggered" : datetime.now()}}});
             last_messages.update_one({"_id": last_message['_id']}, {"$set" : last_message})
         else:
             raise Exception(f"Failed to run your query. Please try again later.")
