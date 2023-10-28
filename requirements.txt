@@ -4,3 +4,4 @@ requests
 bs4
 requests_toolbelt
 scikit-learn
+gunicorn
