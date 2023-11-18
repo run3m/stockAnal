@@ -8,7 +8,7 @@ import os
 import re
 
 
-def generateReportAndUpload(req_search, last_message, contact_details):
+def generateReportAndUpload(req_search, last_message, contact_details, isNewQuery = False):
     db = get_db()["myDatabase"]
     last_messages = db["last_messages"]
     latest_searches = db["latest_searches"]
@@ -27,10 +27,11 @@ def generateReportAndUpload(req_search, last_message, contact_details):
             encoder = MultipartEncoder(
                 fields={
                     "file": (
-                        "babe.csv",
+                        "babe.xlsx",
                         open(csv_path, "rb"),
-                        "application/vnd.ms-excel",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     ),
+                    "type":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     "messaging_product": "whatsapp",
                 }
             )
@@ -42,7 +43,15 @@ def generateReportAndUpload(req_search, last_message, contact_details):
                     "Content-Type": encoder.content_type,
                     "Authorization": f"Bearer {bearer_token}",
                 },
-                data=encoder,
+                data=encoder
+                # files={"file": (
+                #         "babe.xlsx",
+                #         open(csv_path, "rb"),
+                #     )},
+                # data={
+                #     "type":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                #     "messaging_product": "whatsapp"
+                # },
             )
             try:
                 # Attempt to delete the file
@@ -58,19 +67,12 @@ def generateReportAndUpload(req_search, last_message, contact_details):
             media_id = media_response.json()["id"]
             # this will change the passed req_search. which means req_search in calling code will also change.
             req_search["media_id"] = media_id
+            req_search["last_triggered"] = datetime.now()
 
-            latest_searches.update_one(
-                {"user": contact_details["wa_id"]},
-                {
-                    "$push": {
-                        "searches": {
-                            "query": req_search["query"],
-                            "media_id": media_id,
-                            "last_triggered": datetime.now(),
-                        }
-                    }
-                },
-            )
+            if(isNewQuery):
+                last_message["data"].insert(0, req_search)
+            latest_searches.update_one({"user": contact_details["wa_id"]}, {"$set":{"searches":last_message["data"]}})
+
             last_messages.update_one(
                 {"_id": last_message["_id"]}, {"$set": last_message}
             )
@@ -87,7 +89,7 @@ def sendReport(media_id, contact_details):
                 "recipient_type": "individual",
                 "to": contact_details["wa_id"],
                 "type": "document",
-                "document": {"id": str(media_id), "filename": "report.xlsx"},
+                "document": {"id": str(media_id), "filename": f"report_{datetime.now().strftime('%y%m%d_%H%M%S')}.xlsx"},
             }
         )
         response = requests.post(

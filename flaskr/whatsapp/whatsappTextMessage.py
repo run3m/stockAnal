@@ -38,6 +38,7 @@ def handle_message(message_details, contact_details):
             req_search=req_search,
             last_message=last_message,
             contact_details=contact_details,
+            isNewQuery=True
         )
         return util.sendReport(req_search["media_id"], contact_details=contact_details)
     elif (
@@ -51,7 +52,10 @@ def handle_message(message_details, contact_details):
                 f"Requested report number is greater than number of lastest reports available.\nPlease enter a number between 1 and {len(last_message['data'])}."
             )
         req_search = last_message["data"][report_no]
-        if not bool(req_search["media_id"]):
+            
+        stocks = db["scr_init"]
+        first_stock = stocks.find_one({"sno": 1})
+        if not bool(req_search["media_id"]) or req_search["last_triggered"] < first_stock["last_interaction"]:
             util.generateReportAndUpload(
                 req_search=req_search,
                 last_message=last_message,

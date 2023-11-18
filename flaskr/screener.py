@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 import tempfile
 import json
 import csv
+import pandas as pd
 bp = Blueprint('screenerio', __name__, url_prefix='/screener')
 tmp_file = ''
 @bp.route("/fetchBasicStocks", methods=['GET'])
@@ -68,15 +69,15 @@ def fetch_basic_stocks():
         insert_result = None;
         screener_data_collection = db['scr_init'];
         print("s0", datetime.now());
-        existing_docs = screener_data_collection.find({}, {"company_id": 1});
+        # existing_docs = screener_data_collection.find({}, {"company_id": 1});
         print("e0", datetime.now());
-        existing_companies = [doc['company_id'] for doc in existing_docs]
+        # existing_companies = [doc['company_id'] for doc in existing_docs]
         try:
             docs = [dict(zip(headers, row)) for row in stock_data];
-            existing_company_ids = [i['company_id'] for i in docs if i['company_id'] in existing_companies];
+            # existing_company_ids = [i['company_id'] for i in docs if i['company_id'] in existing_companies];
             
             print("s1", datetime.now());
-            screener_data_collection.delete_many({"company_id": {"$in": existing_company_ids}});
+            screener_data_collection.delete_many({});
             print("e1", datetime.now());
             insert_result = screener_data_collection.insert_many(docs);
             print("e2", datetime.now());
@@ -284,15 +285,15 @@ def generate_report():
             report['score'] = score;
             reports.append(report);
              
-        csv_path = writeTocsv(reports)
+        csv_path = writeToExcel(reports)
 
         if("just_path" in body and bool(body["just_path"])):
             return {"path": csv_path}
             
         return send_file(csv_path,
                 as_attachment=True,
-                download_name='output.csv',
-                mimetype='text/csv'
+                download_name='output.xlsx',
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             );
     except Exception as e:
         print(f"Error occured in generate report : {e}")
@@ -324,34 +325,26 @@ def string_to_float(input_string):
     except Exception:
         return input_string
     
-def flatten(d, parent_key='', sep='.'):
+def flatten(d):
     items = []
     for k, v in d.items():
-        new_key = parent_key + sep + k if parent_key else k
         if isinstance(v, dict):
-            items.extend(flatten(v, new_key, sep=sep).items())
+            items.extend(flatten(v).items())
         else:
-            items.append((new_key, v))
+            items.append((k, v))
     return dict(items)
 
-def writeTocsv(reports):
+def writeToExcel(reports):
     global tmp_file 
-    tmp = tempfile.NamedTemporaryFile(mode='w+t', delete=True)
-    tmp_file = f"{tmp.name}.csv"
-    data = json.loads(json.dumps(reports))
-    fieldnames= list(flatten(data[0]).keys())
-    dic = {}
-    for i in fieldnames:
-        dic[i] = i
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+    data = []
+    
+    for report in reports:
+        data.append(flatten(report))
+    
+    df = pd.DataFrame(data);
 
-    f = open(tmp_file, 'w')
+    df.to_excel(tmp_file.name, index=False)
+    tmp_file.close()
 
-    try:
-        writer = csv.DictWriter(f, fieldnames=fieldnames) 
-        writer.writerow(dic)
-        for row in data:
-            writer.writerow(flatten(row))
-
-    finally:
-        f.close()   
-    return tmp_file;
+    return tmp_file.name
