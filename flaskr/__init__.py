@@ -9,6 +9,7 @@ from . import runtime_config
 from . import screener
 from .whatsapp.messageClassifier import whatsappClassifier
 from .whatsapp import whatsapp
+from . import warrensden
 
 # calls = {};
 from . import fetchCommon
@@ -50,6 +51,7 @@ def create_app(test_config=None):
     app.register_blueprint(runtime_config.bp)
     app.register_blueprint(screener.bp)
     app.register_blueprint(whatsapp.bp)
+    app.register_blueprint(warrensden.bp)
     app.register_blueprint(fetchCommon.bp)
     
     return app 

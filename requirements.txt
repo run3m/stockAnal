@@ -7,3 +7,8 @@ scikit-learn
 gunicorn
 pandas
 openpyxl
+requests_cache
+requests_ratelimiter
+pyrate_limiter
+pydantic
+yfinance

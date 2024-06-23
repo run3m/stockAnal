@@ -13,7 +13,7 @@ from . import whatsappCommon
 from . import util
 from ..db_config import get_db
 
-make_prediction = joblib.load("message_classification_function.pkl")
+# make_prediction = joblib.load("message_classification_function.pkl")
 
 
 def handle_message(message_details, contact_details):
