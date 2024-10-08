@@ -102,6 +102,7 @@ def getSheetsForStock():
                     data=income_statement_inserts,
                 )
             )
+            # To send to as response.
             income_statement_yearly = {
                 str(key): value for key, value in income_statement_yearly.items()
             }
@@ -255,33 +256,21 @@ def create_statement_documents(
     documents: list[models.Statement] = []
     for key, value in data.items():
         year = int(key.year)
-        document: models.Statement = None
+        document: models.Statement = models.Statement(
+            stock_id=stock["_id"],
+            ticker=stock["symbol"],
+            statement_type=statement_type,
+            year=year,
+            time_frame=freq,
+            data=value,
+            statement_date=key.to_pydatetime(),
+            date=datetime.now(),
+        )
         if freq == StatementTimeFrame.QUARTERLY:
             quarter = math.ceil(int(key.month) / 3)
-            document: models.Statement = models.Statement(
-                stock_id=stock["_id"],
-                ticker=stock["symbol"],
-                statement_type=statement_type,
-                year=year,
-                quarter=quarter,
-                time_frame=freq,
-                data=value,
-                statement_date=key.to_pydatetime(),
-                date=datetime.now(),
-            )
-        else:
-            document: models.Statement = models.Statement(
-                stock_id=stock["_id"],
-                ticker=stock["symbol"],
-                statement_type=statement_type,
-                year=year,
-                time_frame=freq,
-                data=value,
-                statement_date=key.to_pydatetime(),
-                date=datetime.now(),
-            )
-        if document is not None:
-            documents.append(document.model_dump(exclude_none=True))
+            document.quarter = quarter
+
+        documents.append(document.model_dump(exclude_none=True))
     return documents
 
 
@@ -335,15 +324,17 @@ def fetchStocks():
         # Get all rows from warren_fetch_status where full_fetched : false
         warren_fetch_status_collection = db["warren_fetch_status"]
         warren_unfetched = warren_fetch_status_collection.find({"full_fetched": False})
+        statements_collection = db["statements"]
+        stocks = db["nifty500"].find()
+        stocks = {str(doc["_id"]): doc for doc in stocks}
 
         response = {}
         for stock in warren_unfetched:
-            stock = db["nifty500"].find_one({"_id": stock["stock_id"]})
+            stock = stocks[stock["_id"]]
             if stock is None:
                 response[stock["symbol"]] = None
 
             stock_ticker = yf.Ticker(f"{stock['symbol']}.NS", session=session)
-            statements_collection = db["statements"]
 
             # For each stock in warren_fetch_status, fetch : income, balance sheet, cashflow(4 years, 5 quaters)
             statement_data = []
@@ -596,8 +587,10 @@ def property_sheet_mapping():
         property_statement_mapping_collection = db["property_statement_mapping"]
         return property_statement_mapping_collection.find({})[0]["mapping"]
     elif request.method == "POST":
+        response = {}
         statements_collection = db["statements"]
-        statements = statements_collection.find()
+        statements = statements_collection.aggregate([{"$sample": {"size": 100}}])
+
         statement_types = {
             "INCOME_STATEMENT": 0,
             "BALANCE_SHEET": 0,
@@ -605,6 +598,7 @@ def property_sheet_mapping():
         }
         no_new_fields = False
         fields = {}
+        errors = []
         for statement in statements:
             if statement_types[statement["statement_type"]] >= 5:
                 if all(value >= 5 for value in statement_types.values()):
@@ -621,6 +615,9 @@ def property_sheet_mapping():
                 if key not in fields:
                     fields[key] = statement["statement_type"]
                 elif fields[key] != statement["statement_type"]:
+                    errors.append(
+                        f"{key} already set for {fields[key]}, now also found for {statement['statement_type']}"
+                    )
                     print(
                         f"{key} already set for {fields[key]}, now also found for {statement['statement_type']}"
                     )
@@ -628,7 +625,11 @@ def property_sheet_mapping():
         property_statement_mapping_collection = db["property_statement_mapping"]
         property_statement_mapping_collection.delete_many({})
         property_statement_mapping_collection.insert_one({"mapping": fields})
-        return fields
+        return {
+            "fields": fields,
+            "errors": errors,
+            "statement_type_counts": statement_types,
+        }
 
 
 @bp.route("/runAnalysis", methods=["POST"])
@@ -663,8 +664,11 @@ def runAnalysis():
                             "date": "$date",
                         }
                     },
-                },
+                }
             },
+            {
+                "$limit": 5
+            },  # Limit the result to 10 records. Remove this as it is just for testing.
             {
                 "$addFields": {
                     "documents": {
@@ -706,6 +710,7 @@ def runAnalysis():
                         stock_meta = models.StockMeta(
                             ticker=statement["_id"]["ticker"], quarterly={}, yearly={}
                         )
+
                         # {
                         #     "ticker": statement["_id"]["ticker"],
                         #     "quarterly": {},
