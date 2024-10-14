@@ -632,6 +632,20 @@ def property_sheet_mapping():
         }
 
 
+@bp.route("/runPandasAnalysis", methods=["POST"])
+def runPanalysis():
+    try:
+        pass
+        db = get_db()["myDatabase"]
+        # get statements collection
+        statements_collection = db["statements"]
+        statements_collection
+    except:
+        print("Error in /runAnalysis")
+        traceback.print_exc()
+        return {"Error": e}
+
+
 @bp.route("/runAnalysis", methods=["POST"])
 def runAnalysis():
     try:
@@ -682,11 +696,13 @@ def runAnalysis():
         ]
         # fetch statements grouped by fields
         stock_statements = statements_collection.aggregate(pipeline)
+        stock_statements = stock_statements.to_list()
 
         output = []
 
         # fetch existing stock meta details we are storing.
         stock_meta_collection = db["stock_meta"]
+        # return
         stocks_meta: list[models.StockMeta] = [
             models.StockMeta(**doc) for doc in stock_meta_collection.find()
         ]

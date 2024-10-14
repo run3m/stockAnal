@@ -329,9 +329,7 @@ def common_meta(statement, stock_meta: models.StockMeta, stock_id):
                 ):
                     stop_processing[k] = True
 
-            if list(stop_processing.values()).count(True) == len(
-                stop_processing.values()
-            ):
+            if list(stop_processing.values()).all(True):
                 if i == 0:
                     return
                 break
